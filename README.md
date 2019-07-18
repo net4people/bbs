@@ -10,7 +10,7 @@ The BBS is an inclusive and multilingual forum for public discussion about Inter
 El BBS es un servicio inclusivo y multilingüe para la discusión pública de le evitación de la censura del Internet. Es un espacio para que **desarrolladores y investigadores** conversen y compartan información, técnicas, i resultados. Si prefieres, escriba en tu propia idioma, y tratamos de traducir. Para iniciar un asunto de discusión, favor de [crear una nueva cuestión](https://github.com/net4people/bbs/issues/new).
 
 ### Net4People serwis BBS
-Ten BBS jest powszechnym i wielojęzycznym forum dla publicznej dyskusji o obchodzeniem cenzury Internetowej, żeby **programiści i badacze** mogli rozmawiać i dzielić informacja, sposoby, i wyniki badawcze. Jeśli wolisz, proszę pisz po swoim języku, i przetłumaczymy. Aby rozpocząć temat dyskusyjny, proszę [otwórz nowy issue](https://github.com/net4people/bbs/issues/new).
+Ten BBS jest powszechnym i wielojęzycznym forum dla publicznej dyskusji o obchodzeniem cenzury Internetowej, żeby **programiści i badacze** mogli rozmawiać i dzielić informacje, sposoby, i wyniki badawcze. Jeśli wolisz, proszę pisz po swoim języku, a przetłumaczymy. Aby rozpocząć temat dyskusyjny, proszę [otwórz nowy issue](https://github.com/net4people/bbs/issues/new).
 
 ### Net4People BBS
 Das BBS ist ein inklusives und vielsprachiges Forum für öffentliche Diskussion um Internetzensur und Zensurumgehung. Es ist ein Ort für **Entwickler und Forscher**, um Informationen, Techniken und Forschung zu teilen. Schreibe gerne in deiner Sprache; wir werden übersetzen. Um eine Diskussion zu starten, [starte ein "issue"](https://github.com/net4people/bbs/issues/new).
