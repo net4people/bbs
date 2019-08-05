@@ -14,3 +14,7 @@ Ten BBS jest powszechnym i wielojęzycznym forum dla publicznej dyskusji o obcho
 
 ### Net4People BBS
 Das BBS ist ein inklusives und vielsprachiges Forum für öffentliche Diskussion um Internetzensur und Zensurumgehung. Es ist ein Ort für **Entwickler und Forscher**, um Informationen, Techniken und Forschung zu teilen. Schreibe gerne in deiner Sprache; wir werden übersetzen. Um eine Diskussion zu starten, [starte ein "issue"](https://github.com/net4people/bbs/issues/new).
+
+### Net4People BBS
+BBS
+یک انجمن فراگیر و چند زبانه برای بحث و گفتگو عمومی در مورد دور زدن سانسور اینترنت است. این مکان برای **توسعه دهندگان و محققان** است تا اطلاعات ، فنون و تحقیقات را در مورد آنها به اشتراک بگذارند. احساس رایگان برای نوشتن به زبان خودتان. ما ترجمه خواهیم کرد برای شروع یک موضوع بحث [شماره جدیدی را باز کنید ]د.
