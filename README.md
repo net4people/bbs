@@ -7,7 +7,7 @@ The BBS is an inclusive and multilingual forum for public discussion about Inter
 本技术论坛针对翻墙工具**开发者和研究人员**。欢迎各位技术人员讨论和分享有关互联网封锁的信息，方式和研究。
 
 ### Net4People BBS
-El BBS es un servicio inclusivo y multilingüe para la discusión pública de le evitación de la censura del Internet. Es un espacio para que **desarrolladores y investigadores** conversen y compartan información, técnicas, i resultados. Si prefieres, escriba en tu propia idioma, y tratamos de traducir. Para iniciar un asunto de discusión, favor de [crear una nueva cuestión](https://github.com/net4people/bbs/issues/new).
+El BBS es un servicio inclusivo y multilingüe para la discusión pública acerca de las formas de elusión de la censura en Internet. Es un espacio para que **desarrolladores e investigadores** conversen y compartan información, técnicas y resultados. Si prefieres, escribe en tu propio idioma y lo trataremos de traducir. Para iniciar un nuevo tema de discusión, por favor [crea una nueva "issue"](https://github.com/net4people/bbs/issues/new).
 
 ### Net4People serwis BBS
 Ten BBS jest otwartym i wielojęzycznym forum dla publicznej dyskusji na temat obchodzenia cenzury Internetowej. To miejsce, gdzie **programiści i badacze** mogą rozmawiać i dzielić informacje, sposoby, i wyniki badawcze. Jeśli wolisz, proszę pisz po swoim języku, a przetłumaczymy. Aby rozpocząć temat dyskusyjny, proszę [otwórz nowy issue](https://github.com/net4people/bbs/issues/new).
