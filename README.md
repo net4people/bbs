@@ -19,3 +19,8 @@ Das BBS ist ein inklusives und vielsprachiges Forum für öffentliche Diskussion
 <p dir="rtl">
 BBS یک انجمن فراگیر و چند زبانه برای بحث و گفتگو عمومی در مورد دور زدن سانسور اینترنت است. این مکان برای <strong>توسعه دهندگان و محققان</strong> است تا اطلاعات ، فنون و تحقیقات را در مورد آنها به اشتراک بگذارند. احساس رایگان برای نوشتن به زبان خودتان. ما ترجمه خواهیم کرد برای شروع یک موضوع بحث <a href="https://github.com/net4people/bbs/issues/new">شماره جدیدی را باز کنید</a>.
 </p>
+
+----
+
+[Archives of this forum](https://archive.org/search.php?query=source%3A%22https%3A%2F%2Fgithub.com%2Fnet4people%2Fbbs%22&sort=-date), made using the [backup.py](backup.py) script. To make your own backup, [create a personal access token](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) and run:
+<pre><code>./backup.py -u <var>username</var>:<var>token</var> net4people/bbs net4people_bbs.zip</code></pre>
