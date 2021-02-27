@@ -189,6 +189,7 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
             get_to_zipinfo(label["url"], zi, MEDIATYPE, auth)
 
     # TODO: avatars
+    # TODO: githubusercontent.com attachments
 
 if __name__ == "__main__":
     auth = None
