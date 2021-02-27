@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Usage: ./backup -u username:token net4people/bbs bbs-20201231.zip
+# Usage: ./backup.py -u username:token net4people/bbs bbs-20201231.zip
 #
 # Downloads GitHub issues, comments, and labels using the GitHub REST API
 # (https://docs.github.com/en/free-pro-team@latest/rest). Saves output to a zip
