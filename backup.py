@@ -131,8 +131,8 @@ def get_paginated(url, mediatype, auth, params={}):
 
         url = next_url
 
-# If zi.date_time is None, then it will be replaced with the value of the HTTP
-# response's Last-Modified header, if present.
+# If zi.date_time is UNSET_ZIPINFO_DATE_TIME, then it will be replaced with the
+# value of the HTTP response's Last-Modified header, if present.
 def get_to_zipinfo(url, z, zi, mediatype, auth, params={}):
     r = get(url, mediatype, auth, params)
 
