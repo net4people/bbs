@@ -119,7 +119,7 @@ def get_paginated(url, mediatype, auth, params={}):
 
         url = next_url
 
-def get_to_zipinfo(url, zi, mediatype, auth, params={}):
+def get_to_zipinfo(url, z, zi, mediatype, auth, params={}):
     r = get(url, mediatype, auth, params)
     with z.open(zi, mode="w") as f:
         for chunk in r.iter_content(4096):
@@ -144,7 +144,7 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
         for issue in r.json():
             check_url_origin(BASE_URL, issue["url"])
             zi = zipfile.ZipInfo(f"issues/{issue['id']}.json", timestamp_to_zip_time(issue["created_at"]))
-            get_to_zipinfo(issue["url"], zi, MEDIATYPE_REACTIONS, auth)
+            get_to_zipinfo(issue["url"], z, zi, MEDIATYPE_REACTIONS, auth)
 
             # There's no API for getting all reactions in a repository, so get
             # them per issue and per comment.
@@ -166,7 +166,7 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
         for comment in r.json():
             check_url_origin(BASE_URL, comment["url"])
             zi = zipfile.ZipInfo(f"issues/comments/{comment['id']}.json", timestamp_to_zip_time(comment["created_at"]))
-            get_to_zipinfo(comment["url"], zi, MEDIATYPE_REACTIONS, auth)
+            get_to_zipinfo(comment["url"], z, zi, MEDIATYPE_REACTIONS, auth)
 
             # There's no API for getting all reactions in a repository, so get
             # them per issue and per comment.
@@ -186,7 +186,7 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
         for label in r.json():
             check_url_origin(BASE_URL, label["url"])
             zi = zipfile.ZipInfo(f"labels/{label['id']}.json")
-            get_to_zipinfo(label["url"], zi, MEDIATYPE, auth)
+            get_to_zipinfo(label["url"], z, zi, MEDIATYPE, auth)
 
     # TODO: avatars
     # TODO: githubusercontent.com attachments
