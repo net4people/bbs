@@ -315,6 +315,8 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
                     with z.open(zi, mode="w") as f:
                         f.write(json.dumps(reaction).encode("utf-8"))
 
+            # TODO: comment edit history (if possible)
+
     labels_url = urllib.parse.urlparse(BASE_URL)._replace(
         path=f"/repos/{owner}/{repo}/labels",
     ).geturl()
