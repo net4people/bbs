@@ -34,6 +34,8 @@ MEDIATYPE = "application/vnd.github.v3+json"
 # https://docs.github.com/en/free-pro-team@latest/rest/reference/issues#list-repository-issues-preview-notices
 MEDIATYPE_REACTIONS = "application/vnd.github.squirrel-girl-preview+json"
 
+UNSET_ZIPINFO_DATE_TIME = zipfile.ZipInfo("").date_time
+
 def url_origin(url):
     components = urllib.parse.urlparse(url)
     return (components.scheme, components.netloc)
@@ -46,6 +48,11 @@ def datetime_to_zip_time(d):
 
 def timestamp_to_zip_time(timestamp):
     return datetime_to_zip_time(datetime.datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ"))
+
+def http_date_to_zip_time(timestamp):
+    # https://tools.ietf.org/html/rfc7231#section-7.1.1.1
+    # We only support the IMF-fixdate format.
+    return datetime_to_zip_time(datetime.datetime.strptime(timestamp, "%a, %d %b %Y %H:%M:%S GMT"))
 
 # https://docs.github.com/en/free-pro-team@latest/rest/overview/resources-in-the-rest-api#rate-limiting
 # Returns a datetime at which the rate limit will be reset, or None if not
@@ -123,8 +130,16 @@ def get_paginated(url, mediatype, auth, params={}):
 
         url = next_url
 
+# If zi.date_time is None, then it will be replaced with the value of the HTTP
+# response's Last-Modified header, if present.
 def get_to_zipinfo(url, z, zi, mediatype, auth, params={}):
     r = get(url, mediatype, auth, params)
+
+    if zi.date_time == UNSET_ZIPINFO_DATE_TIME:
+        last_modified = r.headers.get("Last-Modified")
+        if last_modified is not None:
+            zi.date_time = http_date_to_zip_time(last_modified)
+
     with z.open(zi, mode="w") as f:
         for chunk in r.iter_content(4096):
             f.write(chunk)
