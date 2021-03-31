@@ -24,6 +24,7 @@ import time
 import urllib.parse
 import zipfile
 
+import mistune
 import requests
 
 BASE_URL = "https://api.github.com/"
@@ -79,12 +80,15 @@ def get(url, mediatype, auth, params={}):
     while True:
         print(url, end="", flush=True)
         try:
-            r = requests.get(url, params=params, headers={"Accept": mediatype}, **kwargs)
+            headers = {}
+            if mediatype is not None:
+                headers["Accept"] = mediatype
+            r = requests.get(url, params=params, headers=headers, **kwargs)
         except Exception as e:
             print(f" => {str(type(e))}", flush=True)
             raise
 
-        print(f" => {r.status_code} {r.reason} {r.headers['x-ratelimit-used']}/{r.headers['x-ratelimit-limit']}", flush=True)
+        print(f" => {r.status_code} {r.reason} {r.headers.get('x-ratelimit-used', '-')}/{r.headers.get('x-ratelimit-limit', '-')}", flush=True)
         reset = rate_limit_reset(r)
         if reset is not None:
             reset_seconds = (reset - datetime.datetime.utcnow()).total_seconds()
@@ -145,6 +149,63 @@ def make_zip_file_path(*components):
         raise ValueError("path is empty")
     return "/".join(components)
 
+# Custom mistune.Renderer that stores a list of all links encountered.
+class LinkExtractionRenderer(mistune.Renderer):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.links = []
+
+    def autolink(self, link, is_email=False):
+        self.links.append(link)
+        return super().autolink(link, is_email)
+
+    def image(self, src, title, alt_text):
+        self.links.append(src)
+        return super().image(src, title, alt_text)
+
+    def link(self, link, title, content):
+        self.links.append(link)
+        return super().link(link, title, content)
+
+def markdown_extract_links(markdown):
+    renderer = LinkExtractionRenderer()
+    mistune.Markdown(renderer=renderer)(markdown) # Discard HTML output.
+    return renderer.links
+
+# Return seq with prefix stripped if it has such a prefix, or else None.
+def strip_prefix(seq, prefix):
+    if len(seq) < len(prefix):
+        return None
+    for a, b in zip(seq, prefix):
+        if a != b:
+            return None
+    return seq[len(prefix):]
+
+def split_url_path(path):
+    return tuple(urllib.parse.unquote(component) for component in path.split("/"))
+
+def strip_url_path_prefix(path, prefix):
+    return strip_prefix(split_url_path(path), split_url_path(prefix))
+
+# If url is one we want to download, return a list of path components for the
+# path we want to store it at.
+def link_is_wanted(url):
+    try:
+        components = urllib.parse.urlparse(url)
+    except ValueError:
+        return None
+
+    if components.scheme == "https" and components.netloc == "user-images.githubusercontent.com":
+        subpath = strip_url_path_prefix(components.path, "")
+        if subpath is not None:
+            # Inline image.
+            return ("user-images.githubusercontent.com", *subpath)
+    if components.scheme == "https" and components.netloc == "github.com":
+        subpath = strip_url_path_prefix(components.path, f"/{owner}/{repo}/files")
+        if subpath is not None:
+            # File attachment.
+            return ("files", *subpath)
+
 def backup(owner, repo, z, auth):
     paths_seen = set()
     # Calls make_zip_file_path, and additional raises an exception if the path
@@ -166,6 +227,8 @@ Archive of the GitHub repository https://github.com/{owner}/{repo}/
 made {now.strftime("%Y-%m-%d %H:%M:%S")}.
 """)
 
+    file_urls = set()
+
     # https://docs.github.com/en/free-pro-team@latest/rest/reference/issues#list-repository-issues
     issues_url = urllib.parse.urlparse(BASE_URL)._replace(
         path=f"/repos/{owner}/{repo}/issues",
@@ -175,6 +238,13 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
             check_url_origin(BASE_URL, issue["url"])
             zi = zipfile.ZipInfo(check_path("issues", str(issue["id"]) + ".json"), timestamp_to_zip_time(issue["created_at"]))
             get_to_zipinfo(issue["url"], z, zi, MEDIATYPE_REACTIONS, auth)
+
+            # Re-open the JSON file we just wrote, to parse it for links.
+            with z.open(zi) as f:
+                for link in markdown_extract_links(json.load(f)["body"]):
+                    dest = link_is_wanted(link)
+                    if dest is not None:
+                        file_urls.add((dest, link))
 
             # There's no API for getting all reactions in a repository, so get
             # them per issue and per comment.
@@ -198,6 +268,13 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
             zi = zipfile.ZipInfo(check_path("issues", "comments", str(comment["id"]) + ".json"), timestamp_to_zip_time(comment["created_at"]))
             get_to_zipinfo(comment["url"], z, zi, MEDIATYPE_REACTIONS, auth)
 
+            # Re-open the JSON file we just wrote, to parse it for links.
+            with z.open(zi) as f:
+                for link in markdown_extract_links(json.load(f)["body"]):
+                    dest = link_is_wanted(link)
+                    if dest is not None:
+                        file_urls.add((dest, link))
+
             # There's no API for getting all reactions in a repository, so get
             # them per issue and per comment.
             # https://docs.github.com/en/free-pro-team@latest/rest/reference/reactions#list-reactions-for-an-issue-comment
@@ -219,7 +296,10 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
             get_to_zipinfo(label["url"], z, zi, MEDIATYPE, auth)
 
     # TODO: avatars
-    # TODO: githubusercontent.com attachments
+
+    for dest, url in sorted(file_urls):
+        zi = zipfile.ZipInfo(check_path(*dest))
+        get_to_zipinfo(url, z, zi, None, None)
 
 if __name__ == "__main__":
     auth = None
