@@ -125,13 +125,43 @@ def get_to_zipinfo(url, z, zi, mediatype, auth, params={}):
         for chunk in r.iter_content(4096):
             f.write(chunk)
 
+# Converts a list of path components into a string path, raising an exception if
+# any component contains a slash, is "." or "..", or is empty; or if the whole
+# path is empty. The checks are to prevent any file writes outside the
+# destination directory when the zip file is extracted. We rely on the
+# assumption that no other files in the zip file are symbolic links, which is
+# true because this program does not create symbolic links.
+def make_zip_file_path(*components):
+    for component in components:
+        if "/" in component:
+            raise ValueError("path component contains a slash")
+        if component == "":
+            raise ValueError("path component is empty")
+        if component == ".":
+            raise ValueError("path component is a self directory reference")
+        if component == "..":
+            raise ValueError("path component is a parent directory reference")
+    if not components:
+        raise ValueError("path is empty")
+    return "/".join(components)
+
 def backup(owner, repo, z, auth):
+    paths_seen = set()
+    # Calls make_zip_file_path, and additional raises an exception if the path
+    # has already been used.
+    def check_path(*components):
+        path = make_zip_file_path(*components)
+        if path in paths_seen:
+            raise ValueError(f"duplicate filename {path!a}")
+        paths_seen.add(path)
+        return path
+
     # Escape owner and repo suitably for use in a URL.
     owner = urllib.parse.quote(owner, safe="")
     repo = urllib.parse.quote(repo, safe="")
 
     now = datetime.datetime.utcnow()
-    z.writestr("README", f"""\
+    z.writestr(check_path("README"), f"""\
 Archive of the GitHub repository https://github.com/{owner}/{repo}/
 made {now.strftime("%Y-%m-%d %H:%M:%S")}.
 """)
@@ -143,7 +173,7 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
     for r in get_paginated(issues_url, MEDIATYPE_REACTIONS, auth, {"sort": "created", "direction": "asc"}):
         for issue in r.json():
             check_url_origin(BASE_URL, issue["url"])
-            zi = zipfile.ZipInfo(f"issues/{issue['id']}.json", timestamp_to_zip_time(issue["created_at"]))
+            zi = zipfile.ZipInfo(check_path("issues", str(issue["id"]) + ".json"), timestamp_to_zip_time(issue["created_at"]))
             get_to_zipinfo(issue["url"], z, zi, MEDIATYPE_REACTIONS, auth)
 
             # There's no API for getting all reactions in a repository, so get
@@ -153,7 +183,7 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
             check_url_origin(BASE_URL, reactions_url)
             for r2 in get_paginated(reactions_url, MEDIATYPE_REACTIONS, auth):
                 for reaction in r2.json():
-                    zi = zipfile.ZipInfo(f"issues/{issue['id']}/reactions/{reaction['id']}.json", timestamp_to_zip_time(reaction["created_at"]))
+                    zi = zipfile.ZipInfo(check_path("issues", str(issue["id"]), "reactions", str(reaction["id"]) + ".json"), timestamp_to_zip_time(reaction["created_at"]))
                     with z.open(zi, mode="w") as f:
                         f.write(json.dumps(reaction).encode("utf-8"))
 
@@ -165,7 +195,7 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
     for r in get_paginated(comments_url, MEDIATYPE_REACTIONS, auth):
         for comment in r.json():
             check_url_origin(BASE_URL, comment["url"])
-            zi = zipfile.ZipInfo(f"issues/comments/{comment['id']}.json", timestamp_to_zip_time(comment["created_at"]))
+            zi = zipfile.ZipInfo(check_path("issues", "comments", str(comment["id"]) + ".json"), timestamp_to_zip_time(comment["created_at"]))
             get_to_zipinfo(comment["url"], z, zi, MEDIATYPE_REACTIONS, auth)
 
             # There's no API for getting all reactions in a repository, so get
@@ -175,7 +205,7 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
             check_url_origin(BASE_URL, reactions_url)
             for r2 in get_paginated(reactions_url, MEDIATYPE_REACTIONS, auth):
                 for reaction in r2.json():
-                    zi = zipfile.ZipInfo(f"issues/comments/{comment['id']}/reactions/{reaction['id']}.json", timestamp_to_zip_time(reaction["created_at"]))
+                    zi = zipfile.ZipInfo(check_path("issues", "comments", str(comment["id"]), "reactions", str(reaction["id"]) + ".json"), timestamp_to_zip_time(reaction["created_at"]))
                     with z.open(zi, mode="w") as f:
                         f.write(json.dumps(reaction).encode("utf-8"))
 
@@ -185,7 +215,7 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
     for r in get_paginated(labels_url, MEDIATYPE, auth):
         for label in r.json():
             check_url_origin(BASE_URL, label["url"])
-            zi = zipfile.ZipInfo(f"labels/{label['id']}.json")
+            zi = zipfile.ZipInfo(check_path("labels", str(label["id"]) + ".json"))
             get_to_zipinfo(label["url"], z, zi, MEDIATYPE, auth)
 
     # TODO: avatars
