@@ -15,6 +15,7 @@
 
 import datetime
 import getopt
+import itertools
 import json
 import os
 import os.path
@@ -220,6 +221,17 @@ def link_is_wanted(url):
         if subpath is not None:
             # File attachment.
             return ("files", *subpath)
+    if components.scheme == "https" and components.netloc == "avatars.githubusercontent.com":
+        path = components.path
+        if components.query:
+            # Avatar URLs often differ in the presence or absence of query
+            # parameters. Save the query string with the path, just in case they
+            # differ.
+            path += "?" + components.query
+        subpath = strip_url_path_prefix(path, "")
+        if subpath is not None:
+            # Avatar image.
+            return ("avatars.githubusercontent.com", *subpath)
 
 def backup(owner, repo, z, auth):
     paths_seen = set()
@@ -256,7 +268,8 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
 
             # Re-open the JSON file we just wrote, to parse it for links.
             with z.open(zi) as f:
-                for link in markdown_extract_links(json.load(f)["body"]):
+                data = json.load(f)
+                for link in itertools.chain(markdown_extract_links(data["body"]), [data["user"]["avatar_url"]]):
                     dest = link_is_wanted(link)
                     if dest is not None:
                         file_urls.add((dest, link))
@@ -285,7 +298,8 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
 
             # Re-open the JSON file we just wrote, to parse it for links.
             with z.open(zi) as f:
-                for link in markdown_extract_links(json.load(f)["body"]):
+                data = json.load(f)
+                for link in itertools.chain(markdown_extract_links(data["body"]), [data["user"]["avatar_url"]]):
                     dest = link_is_wanted(link)
                     if dest is not None:
                         file_urls.add((dest, link))
@@ -309,8 +323,6 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
             check_url_origin(BASE_URL, label["url"])
             zi = zipfile.ZipInfo(check_path("labels", str(label["id"]) + ".json"))
             get_to_zipinfo(label["url"], z, zi, MEDIATYPE, auth)
-
-    # TODO: avatars
 
     for dest, url in sorted(file_urls):
         zi = zipfile.ZipInfo(check_path(*dest))
