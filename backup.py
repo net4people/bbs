@@ -269,7 +269,7 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
             # Re-open the JSON file we just wrote, to parse it for links.
             with z.open(zi) as f:
                 data = json.load(f)
-                for link in itertools.chain(markdown_extract_links(data["body"]), [data["user"]["avatar_url"]]):
+                for link in itertools.chain(markdown_extract_links(data["body"] or ""), [data["user"]["avatar_url"]]):
                     dest = link_is_wanted(link)
                     if dest is not None:
                         file_urls.add((dest, link))
@@ -299,7 +299,7 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
             # Re-open the JSON file we just wrote, to parse it for links.
             with z.open(zi) as f:
                 data = json.load(f)
-                for link in itertools.chain(markdown_extract_links(data["body"]), [data["user"]["avatar_url"]]):
+                for link in itertools.chain(markdown_extract_links(data["body"] or ""), [data["user"]["avatar_url"]]):
                     dest = link_is_wanted(link)
                     if dest is not None:
                         file_urls.add((dest, link))
