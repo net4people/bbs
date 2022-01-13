@@ -15,10 +15,10 @@ Ten BBS jest otwartym i wielojęzycznym forum dla publicznej dyskusji na temat o
 ### Net4People BBS
 Das BBS ist ein inklusives und vielsprachiges Forum für öffentliche Diskussion um Internetzensur und Zensurumgehung. Es ist ein Ort für **Entwickler und Forscher**, um Informationen, Techniken und Forschung zu teilen. Schreibe gerne in deiner Sprache; wir werden übersetzen. Um eine Diskussion zu starten, [starte ein "issue"](https://github.com/net4people/bbs/issues/new).
 
-### Net4People BBS
-<p dir="rtl">
-BBS یک انجمن فراگیر و چند زبانه برای بحث و گفتگو عمومی در مورد دور زدن سانسور اینترنت است. این مکان برای <strong>توسعه دهندگان و محققان</strong> است تا اطلاعات ، فنون و تحقیقات را در مورد آنها به اشتراک بگذارند. احساس رایگان برای نوشتن به زبان خودتان. ما ترجمه خواهیم کرد برای شروع یک موضوع بحث <a href="https://github.com/net4people/bbs/issues/new">شماره جدیدی را باز کنید</a>.
-</p>
+### &rlm;انجمن Net4People&zwnj;
+
+&rlm;BBS یک انجمن فراگیر و چند زبانه برای بحث و گفتگوی عمومی در مورد دور زدن سانسور اینترنت است. این مکانی برای **توسعه دهندگان و محققان** است تا بحث کنند و اطلاعات، فنون و تحقیقات را به اشتراک بگذارند. با خیال راحت به زبان خود بنویسید؛ ما ترجمه خواهیم کرد. برای شروع یک موضوع بحث، [یک مسئله ی جدید ایجاد کنید](https://github.com/net4people/bbs/issues/new).&zwnj;
+
 
 ----
 
