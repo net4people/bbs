@@ -165,8 +165,13 @@ def make_zip_file_path(*components):
         raise ValueError("path is empty")
     return "/".join(components)
 
+# Fallback to mistune 1.0 renderer if mistune 2.0 is not installed
+try:
+    mistuneRenderer = mistune.HTMLRenderer
+except AttributeError:
+    mistuneRenderer = mistune.Renderer
 # Custom mistune.Renderer that stores a list of all links encountered.
-class LinkExtractionRenderer(mistune.Renderer):
+class LinkExtractionRenderer(mistuneRenderer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.links = []
@@ -179,7 +184,7 @@ class LinkExtractionRenderer(mistune.Renderer):
         self.links.append(src)
         return super().image(src, title, alt_text)
 
-    def link(self, link, title, content):
+    def link(self, link, title, content=None):
         self.links.append(link)
         return super().link(link, title, content)
 
