@@ -4,7 +4,7 @@
 The BBS is an inclusive and multilingual forum for public discussion about Internet censorship circumvention. It is a place for **developers and researchers** to discuss and share information, techniques, and research. Feel free to write in your own language; we will translate. To start a discussion topic, [open a new issue](https://github.com/net4people/bbs/issues/new).
 
 ### Net4People论坛
-本技术论坛针对翻墙工具**开发者和研究人员**。欢迎各位技术人员讨论和分享有关互联网封锁的信息，方式和研究。
+本BBS是一个包容的多语种论坛，用于公开讨论规避互联网审查的话题。欢迎各位**开发者和研究人员**讨论和分享有关互联网封锁的信息、技术及研究。欢迎你使用自己的语言，我们会翻译的。要发起一个讨论话题，请[创建一个新的issue](https://github.com/net4people/bbs/issues/new)。
 
 ### Net4People BBS
 El BBS es un servicio inclusivo y multilingüe para la discusión pública acerca de las formas de elusión de la censura en Internet. Es un espacio para que **desarrolladores e investigadores** conversen y compartan información, técnicas y resultados. Si prefieres, escribe en tu propio idioma y lo trataremos de traducir. Para iniciar un nuevo tema de discusión, por favor [crea una nueva "issue"](https://github.com/net4people/bbs/issues/new).
