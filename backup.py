@@ -78,12 +78,8 @@ def rate_limit_reset(r):
     reset = r.headers["x-ratelimit-reset"]
     return datetime.datetime.utcfromtimestamp(int(r.headers["x-ratelimit-reset"]))
 
-def get(url, mediatype, auth, params={}):
+def get(sess, url, mediatype, params={}):
     # TODO: warn on 301 redirect? https://docs.github.com/en/free-pro-team@latest/rest/overview/resources-in-the-rest-api#http-redirects
-
-    kwargs = {}
-    if auth is not None:
-        kwargs["auth"] = auth
 
     while True:
         print(url, end="", flush=True)
@@ -91,7 +87,7 @@ def get(url, mediatype, auth, params={}):
             headers = {}
             if mediatype is not None:
                 headers["Accept"] = mediatype
-            r = requests.get(url, params=params, headers=headers, **kwargs)
+            r = sess.get(url, params=params, headers=headers)
         except Exception as e:
             print(f" => {str(type(e))}", flush=True)
             raise
@@ -108,7 +104,7 @@ def get(url, mediatype, auth, params={}):
 
 # https://docs.github.com/en/free-pro-team@latest/rest/overview/resources-in-the-rest-api#pagination
 # https://docs.github.com/en/free-pro-team@latest/guides/traversing-with-pagination
-def get_paginated(url, mediatype, auth, params={}):
+def get_paginated(sess, url, mediatype, params={}):
     params = params.copy()
     try:
         del params["page"]
@@ -117,7 +113,7 @@ def get_paginated(url, mediatype, auth, params={}):
     params["per_page"] = "100"
 
     while True:
-        r = get(url, mediatype, auth, params)
+        r = get(sess, url, mediatype, params)
         yield r
 
         next_link = r.links.get("next")
@@ -133,8 +129,8 @@ def get_paginated(url, mediatype, auth, params={}):
 
 # If zi.date_time is UNSET_ZIPINFO_DATE_TIME, then it will be replaced with the
 # value of the HTTP response's Last-Modified header, if present.
-def get_to_zipinfo(url, z, zi, mediatype, auth, params={}):
-    r = get(url, mediatype, auth, params)
+def get_to_zipinfo(sess, url, z, zi, mediatype, params={}):
+    r = get(sess, url, mediatype, params)
 
     if zi.date_time == UNSET_ZIPINFO_DATE_TIME:
         last_modified = r.headers.get("Last-Modified")
@@ -238,7 +234,7 @@ def link_is_wanted(url):
             # Avatar image.
             return ("avatars.githubusercontent.com", *subpath)
 
-def backup(owner, repo, z, auth):
+def backup(owner, repo, z, username, token):
     paths_seen = set()
     # Calls make_zip_file_path, and additional raises an exception if the path
     # has already been used.
@@ -261,15 +257,19 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
 
     file_urls = set()
 
+    # HTTP Basic authentication for API.
+    sess = requests.Session()
+    sess.auth = requests.auth.HTTPBasicAuth(username, token)
+
     # https://docs.github.com/en/free-pro-team@latest/rest/reference/issues#list-repository-issues
     issues_url = urllib.parse.urlparse(BASE_URL)._replace(
         path=f"/repos/{owner}/{repo}/issues",
     ).geturl()
-    for r in get_paginated(issues_url, MEDIATYPE_REACTIONS, auth, {"sort": "created", "direction": "asc"}):
+    for r in get_paginated(sess, issues_url, MEDIATYPE_REACTIONS, {"sort": "created", "direction": "asc"}):
         for issue in r.json():
             check_url_origin(BASE_URL, issue["url"])
             zi = zipfile.ZipInfo(check_path("issues", str(issue["id"]) + ".json"), timestamp_to_zip_time(issue["created_at"]))
-            get_to_zipinfo(issue["url"], z, zi, MEDIATYPE_REACTIONS, auth)
+            get_to_zipinfo(sess, issue["url"], z, zi, MEDIATYPE_REACTIONS)
 
             # Re-open the JSON file we just wrote, to parse it for links.
             with z.open(zi) as f:
@@ -284,7 +284,7 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
             # https://docs.github.com/en/free-pro-team@latest/rest/reference/reactions#list-reactions-for-an-issue
             reactions_url = issue["reactions"]["url"]
             check_url_origin(BASE_URL, reactions_url)
-            for r2 in get_paginated(reactions_url, MEDIATYPE_REACTIONS, auth):
+            for r2 in get_paginated(sess, reactions_url, MEDIATYPE_REACTIONS):
                 for reaction in r2.json():
                     zi = zipfile.ZipInfo(check_path("issues", str(issue["id"]), "reactions", str(reaction["id"]) + ".json"), timestamp_to_zip_time(reaction["created_at"]))
                     with z.open(zi, mode="w") as f:
@@ -295,11 +295,11 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
     comments_url = urllib.parse.urlparse(BASE_URL)._replace(
         path=f"/repos/{owner}/{repo}/issues/comments",
     ).geturl()
-    for r in get_paginated(comments_url, MEDIATYPE_REACTIONS, auth):
+    for r in get_paginated(sess, comments_url, MEDIATYPE_REACTIONS):
         for comment in r.json():
             check_url_origin(BASE_URL, comment["url"])
             zi = zipfile.ZipInfo(check_path("issues", "comments", str(comment["id"]) + ".json"), timestamp_to_zip_time(comment["created_at"]))
-            get_to_zipinfo(comment["url"], z, zi, MEDIATYPE_REACTIONS, auth)
+            get_to_zipinfo(sess, comment["url"], z, zi, MEDIATYPE_REACTIONS)
 
             # Re-open the JSON file we just wrote, to parse it for links.
             with z.open(zi) as f:
@@ -314,7 +314,7 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
             # https://docs.github.com/en/free-pro-team@latest/rest/reference/reactions#list-reactions-for-an-issue-comment
             reactions_url = comment["reactions"]["url"]
             check_url_origin(BASE_URL, reactions_url)
-            for r2 in get_paginated(reactions_url, MEDIATYPE_REACTIONS, auth):
+            for r2 in get_paginated(sess, reactions_url, MEDIATYPE_REACTIONS):
                 for reaction in r2.json():
                     zi = zipfile.ZipInfo(check_path("issues", "comments", str(comment["id"]), "reactions", str(reaction["id"]) + ".json"), timestamp_to_zip_time(reaction["created_at"]))
                     with z.open(zi, mode="w") as f:
@@ -325,24 +325,24 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
     labels_url = urllib.parse.urlparse(BASE_URL)._replace(
         path=f"/repos/{owner}/{repo}/labels",
     ).geturl()
-    for r in get_paginated(labels_url, MEDIATYPE, auth):
+    for r in get_paginated(sess, labels_url, MEDIATYPE):
         for label in r.json():
             check_url_origin(BASE_URL, label["url"])
             zi = zipfile.ZipInfo(check_path("labels", str(label["id"]) + ".json"))
-            get_to_zipinfo(label["url"], z, zi, MEDIATYPE, auth)
+            get_to_zipinfo(sess, label["url"], z, zi, MEDIATYPE)
+
+    # A new session, without Basic auth, for downloading plain files.
+    sess = requests.Session()
 
     for dest, url in sorted(file_urls):
         zi = zipfile.ZipInfo(check_path(*dest))
-        get_to_zipinfo(url, z, zi, None, None)
+        get_to_zipinfo(sess, url, z, zi, None)
 
 if __name__ == "__main__":
-    auth = None
-
     opts, (repo, zip_filename) = getopt.gnu_getopt(sys.argv[1:], "u:")
     for o, a in opts:
         if o == "-u":
             username, token = a.split(":", 1)
-            auth = requests.auth.HTTPBasicAuth(username, token)
         elif o in ("-h", "--help"):
             pass
 
@@ -353,7 +353,7 @@ if __name__ == "__main__":
     with tempfile.NamedTemporaryFile(dir=os.path.dirname(zip_filename), suffix=".zip", delete=False) as f:
         try:
             with zipfile.ZipFile(f, mode="w") as z:
-                backup(owner, repo, z, auth)
+                backup(owner, repo, z, username, token)
             os.rename(f.name, zip_filename)
         except:
             # Delete output zip file on error.
