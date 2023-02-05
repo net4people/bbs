@@ -236,7 +236,7 @@ def link_is_wanted(url):
 
 def backup(owner, repo, z, username, token):
     paths_seen = set()
-    # Calls make_zip_file_path, and additional raises an exception if the path
+    # Calls make_zip_file_path, and additionally raises an exception if the path
     # has already been used.
     def check_path(*components):
         path = make_zip_file_path(*components)
