@@ -19,6 +19,8 @@ Das BBS ist ein inklusives und vielsprachiges Forum für öffentliche Diskussion
 
 &rlm;BBS یک انجمن فراگیر و چند زبانه برای بحث و گفتگوی عمومی در مورد دور زدن سانسور اینترنت است. این مکانی برای **توسعه دهندگان و محققان** است تا بحث کنند و اطلاعات، فنون و تحقیقات را به اشتراک بگذارند. با خیال راحت به زبان خود بنویسید؛ ما ترجمه خواهیم کرد. برای شروع یک موضوع بحث، [یک مسئله ی جدید ایجاد کنید](https://github.com/net4people/bbs/issues/new).&zwnj;
 
+### Net4People BBS
+O BBS é um forum inclusivo e multilíngue para discussão pública sobre como se evadir da censura na Internet. É um lugar para **desenvolvedores e pesquisadores** discutirem e compartilharem informações, técnicas e pesquisas. Sinta-se à vontade para escrever em seu próprio idioma, pois nós traduziremos. Para iniciar um tópico de discussão, [abra um novo problema](https://github.com/net4people/bbs/issues/new).
 
 ----
 
