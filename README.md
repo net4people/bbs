@@ -22,6 +22,9 @@ Das BBS ist ein inklusives und vielsprachiges Forum für öffentliche Diskussion
 ### Net4People BBS
 O BBS é um forum inclusivo e multilíngue para discussão pública sobre como se evadir da censura na Internet. É um lugar para **desenvolvedores e pesquisadores** discutirem e compartilharem informações, técnicas e pesquisas. Sinta-se à vontade para escrever em seu próprio idioma, pois nós traduziremos. Para iniciar um tópico de discussão, [abra um novo problema](https://github.com/net4people/bbs/issues/new).
 
+### Net4People BBS
+BBS adalah forum inklusif dan multibahasa untuk diskusi publik tentang pengelakan sensor internet. Forum ini merupakan tempat bagi para **pengembang dan peneliti** untuk berdiskusi dan berbagi informasi, teknik, dan penelitian. Jangan ragu untuk menulis dalam bahasamu sendiri; kami akan menerjemahkannya. Untuk memulai topik diskusi, [buka isu baru](https://github.com/net4people/bbs/issues/new).
+
 ----
 
 [Archives of this forum](https://archive.org/search.php?query=source%3A%22https%3A%2F%2Fgithub.com%2Fnet4people%2Fbbs%22&sort=-date), made using the [backup.py](backup.py) script. To make your own backup, [create a personal access token](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) and run:
