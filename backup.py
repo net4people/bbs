@@ -78,6 +78,10 @@ def rate_limit_reset(r):
     reset = r.headers["x-ratelimit-reset"]
     return datetime.datetime.utcfromtimestamp(int(r.headers["x-ratelimit-reset"]))
 
+def response_datetime(r):
+    dt = r.headers.get("date")
+    return datetime.datetime.strptime(dt, "%a, %d %b %Y %X %Z")
+
 def get(sess, url, mediatype, params={}):
     # TODO: warn on 301 redirect? https://docs.github.com/en/free-pro-team@latest/rest/overview/resources-in-the-rest-api#http-redirects
 
@@ -95,7 +99,7 @@ def get(sess, url, mediatype, params={}):
         print(f" => {r.status_code} {r.reason} {r.headers.get('x-ratelimit-used', '-')}/{r.headers.get('x-ratelimit-limit', '-')}", flush=True)
         reset = rate_limit_reset(r)
         if reset is not None:
-            reset_seconds = (reset - datetime.datetime.utcnow()).total_seconds()
+            reset_seconds = (reset - response_datetime(r)).total_seconds()
             print(f"waiting {reset_seconds:.0f} s for rate limit, will resume at {reset.strftime('%Y-%m-%d %H:%M:%S')}", flush=True)
             time.sleep(reset_seconds)
         else:
