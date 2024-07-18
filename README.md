@@ -25,6 +25,12 @@ O BBS é um forum inclusivo e multilíngue para discussão pública sobre como s
 ### Net4People BBS
 BBS adalah forum inklusif dan multibahasa untuk diskusi publik tentang pengelakan sensor internet. Forum ini merupakan tempat bagi para **pengembang dan peneliti** untuk berdiskusi dan berbagi informasi, teknik, dan penelitian. Jangan ragu untuk menulis dalam bahasamu sendiri; kami akan menerjemahkannya. Untuk memulai topik diskusi, [buka isu baru](https://github.com/net4people/bbs/issues/new).
 
+### Net4People ဘီဘီအက်စ်
+ဘီဘီအက်စ်ဆိုသည်မှာ အင်တာနက်ဆင်ဆာပိတ်ဆို့မှုများအား ကျော်ဖြတ်ခြင်းအတွက် ဆွေးနွေးနိုင်သည့် ဖိုရမ်တစ်ခုဖြစ်ပါသည်။ **သုတေသီတွေနဲ့ ဒီဗလိုပါတွေ** သတင်းအချက်အလက်၊ နည်းစနစ်နဲ့ စာတမ်းတွေ မျှဝေနိုင်
+သည့်နေရာတစ်ခုလည်းဖြစ်ပါသည်။သင်နားလည်တဲ့ ဘာသာစကားနဲ့ဝင်ရောက်ဆွေးနွေးနိုင်ပါသည်။ ကျွန်ုပ်တို့မှ ဘာသာပြန်ပေးပါမည်။
+အောက်က လင့်ကို နှိပ်ပြီးဆွေးနွေးမှုတစ်ခုစတင်နိုင်ပါသည်။
+[open a new issue](https://github.com/net4people/bbs/issues/new)
+
 ----
 
 [Archives of this forum](https://archive.org/search.php?query=source%3A%22https%3A%2F%2Fgithub.com%2Fnet4people%2Fbbs%22&sort=-date), made using the [backup.py](backup.py) script. To make your own backup, [create a personal access token](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) and run:
