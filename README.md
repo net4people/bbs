@@ -31,6 +31,9 @@ BBS adalah forum inklusif dan multibahasa untuk diskusi publik tentang pengelaka
 အောက်က လင့်ကို နှိပ်ပြီးဆွေးနွေးမှုတစ်ခုစတင်နိုင်ပါသည်။
 [open a new issue](https://github.com/net4people/bbs/issues/new)
 
+### &rlm;منتدى Net4People&zwnj;
+&rlm;هَذَا الْمُنْتَدَى مَسَّاحَةٌ شَامِلَةٌ وَمُتَعَدِّدَةُ اللُّغَاتِ لِلنِّقَاشِ الْعَامِّ حَوْلَ تَجَاوُزِ رَقَابَةِ الإنترنت. يُمْكِنُ **لِلْمُطَوِّرِينَ وَالْبَاحِثِينَ** مُنَاقَشَةُ وَمُشَارَكَةُ الْمَعْلُومَاتِ، وَالتِّقْنِيَّاتِ، وَالْأَبْحَاثِ هُنَا. لَا تَتَرَدَّدْ/ي فِي الْكُتَّابَةِ بَلَغَتِك؛ سَنَقُومُ بِالتَّرْجَمَةِ. لِفَتْحِ نِقَاشِ جَديدٍ، [اِفْتَحْ/ي مُشَكَّلَةَ جَديدَةٍ](https://github.com/net4people/bbs/issues/new).&zwnj;
+
 ----
 
 [Archives of this forum](https://archive.org/search.php?query=source%3A%22https%3A%2F%2Fgithub.com%2Fnet4people%2Fbbs%22&sort=-date), made using the [backup.py](backup.py) script. To make your own backup, [create a personal access token](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) and run:
