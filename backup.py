@@ -222,10 +222,11 @@ def link_is_wanted(url):
             # Inline image.
             return ("user-images.githubusercontent.com", *subpath)
     if components.scheme == "https" and components.netloc == "github.com":
-        subpath = strip_url_path_prefix(components.path, f"/{owner}/{repo}/files")
-        if subpath is not None:
-            # File attachment.
-            return ("files", *subpath)
+        for prefix in (f"/{owner}/{repo}/files", "/user-attachments/files"):
+            subpath = strip_url_path_prefix(components.path, prefix)
+            if subpath is not None:
+                # File attachment.
+                return ("files", *subpath)
     if components.scheme == "https" and components.netloc == "avatars.githubusercontent.com":
         path = components.path
         if components.query:
