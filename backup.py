@@ -279,6 +279,7 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
             with z.open(zi) as f:
                 data = json.load(f)
                 for link in itertools.chain(markdown_extract_links(data["body"] or ""), [data["user"]["avatar_url"]]):
+                    link = urllib.parse.urlunparse(urllib.parse.urlparse(link)._replace(fragment = None)) # Discard fragment.
                     dest = link_is_wanted(link)
                     if dest is not None:
                         file_urls.add((dest, link))
@@ -309,6 +310,7 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
             with z.open(zi) as f:
                 data = json.load(f)
                 for link in itertools.chain(markdown_extract_links(data["body"] or ""), [data["user"]["avatar_url"]]):
+                    link = urllib.parse.urlunparse(urllib.parse.urlparse(link)._replace(fragment = None)) # Discard fragment.
                     dest = link_is_wanted(link)
                     if dest is not None:
                         file_urls.add((dest, link))
