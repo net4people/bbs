@@ -3,14 +3,14 @@
 # Usage: ./backup.py -u username:token net4people/bbs bbs-20201231.zip
 #
 # Downloads GitHub issues, comments, and labels using the GitHub REST API
-# (https://docs.github.com/en/free-pro-team@latest/rest). Saves output to a zip
+# (https://docs.github.com/en/rest?apiVersion=2022-11-28). Saves output to a zip
 # file.
 #
 # The -u option controls authentication. You don't have to use it, but if you
 # don't, you will be limited to 60 API requests per hour. When you are
 # authenticated, you get 5000 API requests per hour. The "token" part is a
 # Personal Access Token, created at https://github.com/settings/tokens.
-# https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/creating-a-personal-access-token
+# https://docs.github.com/en/rest/authentication/authenticating-to-the-rest-api?apiVersion=2022-11-28#authenticating-with-a-personal-access-token
 # You don't have to enable any scopes for the token.
 
 import datetime
@@ -30,10 +30,8 @@ import requests
 
 BASE_URL = "https://api.github.com/"
 
-# https://docs.github.com/en/free-pro-team@latest/rest/overview/media-types
-MEDIATYPE = "application/vnd.github.v3+json"
-# https://docs.github.com/en/free-pro-team@latest/rest/reference/issues#list-repository-issues-preview-notices
-MEDIATYPE_REACTIONS = "application/vnd.github.squirrel-girl-preview+json"
+# https://docs.github.com/en/rest/using-the-rest-api/getting-started-with-the-rest-api?apiVersion=2022-11-28#media-types
+MEDIATYPE = "application/vnd.github+json"
 
 UNSET_ZIPINFO_DATE_TIME = zipfile.ZipInfo("").date_time
 
@@ -55,7 +53,7 @@ def http_date_to_zip_time(timestamp):
     # We only support the IMF-fixdate format.
     return datetime_to_zip_time(datetime.datetime.strptime(timestamp, "%a, %d %b %Y %H:%M:%S GMT"))
 
-# https://docs.github.com/en/free-pro-team@latest/rest/overview/resources-in-the-rest-api#rate-limiting
+# https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api?apiVersion=2022-11-28#checking-the-status-of-your-rate-limit
 # Returns a datetime at which the rate limit will be reset, or None if not
 # currently rate limited.
 def rate_limit_reset(r):
@@ -83,7 +81,7 @@ def response_datetime(r):
     return datetime.datetime.strptime(dt, "%a, %d %b %Y %X %Z")
 
 def get(sess, url, mediatype, params={}):
-    # TODO: warn on 301 redirect? https://docs.github.com/en/free-pro-team@latest/rest/overview/resources-in-the-rest-api#http-redirects
+    # TODO: warn on 301 redirect? https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api?apiVersion=2022-11-28#follow-redirects
 
     while True:
         print(url, end="", flush=True)
@@ -106,8 +104,7 @@ def get(sess, url, mediatype, params={}):
             r.raise_for_status()
             return r
 
-# https://docs.github.com/en/free-pro-team@latest/rest/overview/resources-in-the-rest-api#pagination
-# https://docs.github.com/en/free-pro-team@latest/guides/traversing-with-pagination
+# https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api?apiVersion=2022-11-28
 def get_paginated(sess, url, mediatype, params={}):
     params = params.copy()
     try:
@@ -272,15 +269,15 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
         # HTTP Basic authentication for API.
         sess.auth = requests.auth.HTTPBasicAuth(username, token)
 
-    # https://docs.github.com/en/free-pro-team@latest/rest/reference/issues#list-repository-issues
+    # https://docs.github.com/en/rest/issues/issues?apiVersion=2022-11-28#list-repository-issues
     issues_url = urllib.parse.urlparse(BASE_URL)._replace(
         path=f"/repos/{owner}/{repo}/issues",
     ).geturl()
-    for r in get_paginated(sess, issues_url, MEDIATYPE_REACTIONS, {"state": "all", "sort": "created", "direction": "asc"}):
+    for r in get_paginated(sess, issues_url, MEDIATYPE, {"state": "all", "sort": "created", "direction": "asc"}):
         for issue in r.json():
             check_url_origin(BASE_URL, issue["url"])
             zi = zipfile.ZipInfo(check_path("issues", str(issue["id"]) + ".json"), timestamp_to_zip_time(issue["created_at"]))
-            get_to_zipinfo(sess, issue["url"], z, zi, MEDIATYPE_REACTIONS)
+            get_to_zipinfo(sess, issue["url"], z, zi, MEDIATYPE)
 
             # Re-open the JSON file we just wrote, to parse it for links.
             with z.open(zi) as f:
@@ -293,25 +290,25 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
 
             # There's no API for getting all reactions in a repository, so get
             # them per issue and per comment.
-            # https://docs.github.com/en/free-pro-team@latest/rest/reference/reactions#list-reactions-for-an-issue
+            # https://docs.github.com/en/rest/reactions/reactions?apiVersion=2022-11-28#list-reactions-for-an-issue
             reactions_url = issue["reactions"]["url"]
             check_url_origin(BASE_URL, reactions_url)
-            for r2 in get_paginated(sess, reactions_url, MEDIATYPE_REACTIONS):
+            for r2 in get_paginated(sess, reactions_url, MEDIATYPE):
                 for reaction in r2.json():
                     zi = zipfile.ZipInfo(check_path("issues", str(issue["id"]), "reactions", str(reaction["id"]) + ".json"), timestamp_to_zip_time(reaction["created_at"]))
                     with z.open(zi, mode="w") as f:
                         f.write(json.dumps(reaction).encode("utf-8"))
 
-    # https://docs.github.com/en/free-pro-team@latest/rest/reference/issues#list-issue-comments-for-a-repository
+    # https://docs.github.com/en/rest/issues/comments?apiVersion=2022-11-28#list-issue-comments
     # Comments are linked to their parent issue via the issue_url field.
     comments_url = urllib.parse.urlparse(BASE_URL)._replace(
         path=f"/repos/{owner}/{repo}/issues/comments",
     ).geturl()
-    for r in get_paginated(sess, comments_url, MEDIATYPE_REACTIONS):
+    for r in get_paginated(sess, comments_url, MEDIATYPE):
         for comment in r.json():
             check_url_origin(BASE_URL, comment["url"])
             zi = zipfile.ZipInfo(check_path("issues", "comments", str(comment["id"]) + ".json"), timestamp_to_zip_time(comment["created_at"]))
-            get_to_zipinfo(sess, comment["url"], z, zi, MEDIATYPE_REACTIONS)
+            get_to_zipinfo(sess, comment["url"], z, zi, MEDIATYPE)
 
             # Re-open the JSON file we just wrote, to parse it for links.
             with z.open(zi) as f:
@@ -324,10 +321,10 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
 
             # There's no API for getting all reactions in a repository, so get
             # them per issue and per comment.
-            # https://docs.github.com/en/free-pro-team@latest/rest/reference/reactions#list-reactions-for-an-issue-comment
+            # https://docs.github.com/en/rest/reactions/reactions?apiVersion=2022-11-28#list-reactions-for-an-issue-comment
             reactions_url = comment["reactions"]["url"]
             check_url_origin(BASE_URL, reactions_url)
-            for r2 in get_paginated(sess, reactions_url, MEDIATYPE_REACTIONS):
+            for r2 in get_paginated(sess, reactions_url, MEDIATYPE):
                 for reaction in r2.json():
                     zi = zipfile.ZipInfo(check_path("issues", "comments", str(comment["id"]), "reactions", str(reaction["id"]) + ".json"), timestamp_to_zip_time(reaction["created_at"]))
                     with z.open(zi, mode="w") as f:
@@ -335,6 +332,7 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
 
             # TODO: comment edit history (if possible)
 
+    # https://docs.github.com/en/rest/issues/labels?apiVersion=2022-11-28#list-labels-for-a-repository
     labels_url = urllib.parse.urlparse(BASE_URL)._replace(
         path=f"/repos/{owner}/{repo}/labels",
     ).geturl()
