@@ -264,7 +264,13 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
 
     # HTTP Basic authentication for API.
     sess = requests.Session()
-    sess.auth = requests.auth.HTTPBasicAuth(username, token)
+
+    if (username is None) != (token is None):
+        # Both must be None or both non-None.
+        raise ValueError("only one of username and token was supplied")
+    if username is not None and token is not None:
+        # HTTP Basic authentication for API.
+        sess.auth = requests.auth.HTTPBasicAuth(username, token)
 
     # https://docs.github.com/en/free-pro-team@latest/rest/reference/issues#list-repository-issues
     issues_url = urllib.parse.urlparse(BASE_URL)._replace(
@@ -346,6 +352,9 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
         get_to_zipinfo(sess, url, z, zi, None)
 
 if __name__ == "__main__":
+    username = None
+    token = None
+
     opts, (repo, zip_filename) = getopt.gnu_getopt(sys.argv[1:], "u:")
     for o, a in opts:
         if o == "-u":
