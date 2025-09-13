@@ -291,13 +291,14 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
             # There's no API for getting all reactions in a repository, so get
             # them per issue and per comment.
             # https://docs.github.com/en/rest/reactions/reactions?apiVersion=2022-11-28#list-reactions-for-an-issue
-            reactions_url = issue["reactions"]["url"]
-            check_url_origin(BASE_URL, reactions_url)
-            for r2 in get_paginated(sess, reactions_url, MEDIATYPE):
-                for reaction in r2.json():
-                    zi = zipfile.ZipInfo(check_path("issues", str(issue["id"]), "reactions", str(reaction["id"]) + ".json"), timestamp_to_zip_time(reaction["created_at"]))
-                    with z.open(zi, mode="w") as f:
-                        f.write(json.dumps(reaction).encode("utf-8"))
+            if issue["reactions"]["total_count"] != 0:
+                reactions_url = issue["reactions"]["url"]
+                check_url_origin(BASE_URL, reactions_url)
+                for r2 in get_paginated(sess, reactions_url, MEDIATYPE):
+                    for reaction in r2.json():
+                        zi = zipfile.ZipInfo(check_path("issues", str(issue["id"]), "reactions", str(reaction["id"]) + ".json"), timestamp_to_zip_time(reaction["created_at"]))
+                        with z.open(zi, mode="w") as f:
+                            f.write(json.dumps(reaction).encode("utf-8"))
 
     # https://docs.github.com/en/rest/issues/comments?apiVersion=2022-11-28#list-issue-comments
     # Comments are linked to their parent issue via the issue_url field.
@@ -322,13 +323,14 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
             # There's no API for getting all reactions in a repository, so get
             # them per issue and per comment.
             # https://docs.github.com/en/rest/reactions/reactions?apiVersion=2022-11-28#list-reactions-for-an-issue-comment
-            reactions_url = comment["reactions"]["url"]
-            check_url_origin(BASE_URL, reactions_url)
-            for r2 in get_paginated(sess, reactions_url, MEDIATYPE):
-                for reaction in r2.json():
-                    zi = zipfile.ZipInfo(check_path("issues", "comments", str(comment["id"]), "reactions", str(reaction["id"]) + ".json"), timestamp_to_zip_time(reaction["created_at"]))
-                    with z.open(zi, mode="w") as f:
-                        f.write(json.dumps(reaction).encode("utf-8"))
+            if comment["reactions"]["total_count"] != 0:
+                reactions_url = comment["reactions"]["url"]
+                check_url_origin(BASE_URL, reactions_url)
+                for r2 in get_paginated(sess, reactions_url, MEDIATYPE):
+                    for reaction in r2.json():
+                        zi = zipfile.ZipInfo(check_path("issues", "comments", str(comment["id"]), "reactions", str(reaction["id"]) + ".json"), timestamp_to_zip_time(reaction["created_at"]))
+                        with z.open(zi, mode="w") as f:
+                            f.write(json.dumps(reaction).encode("utf-8"))
 
             # TODO: comment edit history (if possible)
 
