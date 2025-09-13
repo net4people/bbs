@@ -276,7 +276,7 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
     issues_url = urllib.parse.urlparse(BASE_URL)._replace(
         path=f"/repos/{owner}/{repo}/issues",
     ).geturl()
-    for r in get_paginated(sess, issues_url, MEDIATYPE_REACTIONS, {"sort": "created", "direction": "asc"}):
+    for r in get_paginated(sess, issues_url, MEDIATYPE_REACTIONS, {"state": "all", "sort": "created", "direction": "asc"}):
         for issue in r.json():
             check_url_origin(BASE_URL, issue["url"])
             zi = zipfile.ZipInfo(check_path("issues", str(issue["id"]) + ".json"), timestamp_to_zip_time(issue["created_at"]))
