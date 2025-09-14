@@ -37,4 +37,4 @@ BBS adalah forum inklusif dan multibahasa untuk diskusi publik tentang pengelaka
 ----
 
 [Archives of this forum](https://archive.org/search.php?query=source%3A%22https%3A%2F%2Fgithub.com%2Fnet4people%2Fbbs%22&sort=-date), made using the [backup.py](backup.py) script. To make your own backup, [create a personal access token](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) and run:
-<pre><code>./backup.py -u <var>username</var>:<var>token</var> net4people/bbs net4people_bbs.zip</code></pre>
+<pre><code>./backup.py -u <var>username</var>:<var>token</var> net4people/bbs net4people_bbs.sqlite3</code></pre>

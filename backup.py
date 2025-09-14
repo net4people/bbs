@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
 
-# Usage: ./backup.py -u username:token net4people/bbs bbs-20201231.zip
+# Usage: ./backup.py -u username:token net4people/bbs bbs-20201231.sqlite3
 #
 # Downloads GitHub issues, comments, and labels using the GitHub REST API
-# (https://docs.github.com/en/rest?apiVersion=2022-11-28). Saves output to a zip
-# file.
+# (https://docs.github.com/en/rest?apiVersion=2022-11-28). Saves output to an
+# SQLite database file.
+#
+# The SQLite database is used as a container for archiving API responses. The
+# tables contain little more than an id column and a blob of JSON. They don't
+# have broken-down columns for convenient querying. That said, you can get
+# something like that using the SQLite JSON functions:
+# https://sqlite.org/json1.html
+# For example:
+# sqlite3 bbs.sqlite3 "SELECT id, json_extract(json,'$.html_url') AS html_url FROM issues"
 #
 # The -u option controls authentication. You don't have to use it, but if you
 # don't, you will be limited to 60 API requests per hour. When you are
@@ -12,18 +20,21 @@
 # Personal Access Token, created at https://github.com/settings/tokens.
 # https://docs.github.com/en/rest/authentication/authenticating-to-the-rest-api?apiVersion=2022-11-28#authenticating-with-a-personal-access-token
 # You don't have to enable any scopes for the token.
+#
+# It should be possible to interrupt the backup process, resulting in a partial
+# database file, and resume it using the same database file. The backup is
+# complete when this program exits with a 0 return code.
 
 import datetime
 import getopt
-import itertools
 import json
-import os
 import os.path
+import shutil
+import sqlite3
 import sys
 import tempfile
 import time
 import urllib.parse
-import zipfile
 
 import mistune
 import requests
@@ -33,25 +44,12 @@ BASE_URL = "https://api.github.com/"
 # https://docs.github.com/en/rest/using-the-rest-api/getting-started-with-the-rest-api?apiVersion=2022-11-28#media-types
 MEDIATYPE = "application/vnd.github+json"
 
-UNSET_ZIPINFO_DATE_TIME = zipfile.ZipInfo("").date_time
-
 def url_origin(url):
     components = urllib.parse.urlparse(url)
     return (components.scheme, components.netloc)
 
 def check_url_origin(base, url):
     assert url_origin(base) == url_origin(url), (base, url)
-
-def datetime_to_zip_time(d):
-    return (d.year, d.month, d.day, d.hour, d.minute, d.second)
-
-def timestamp_to_zip_time(timestamp):
-    return datetime_to_zip_time(datetime.datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%SZ"))
-
-def http_date_to_zip_time(timestamp):
-    # https://tools.ietf.org/html/rfc7231#section-7.1.1.1
-    # We only support the IMF-fixdate format.
-    return datetime_to_zip_time(datetime.datetime.strptime(timestamp, "%a, %d %b %Y %H:%M:%S GMT"))
 
 # https://docs.github.com/en/rest/using-the-rest-api/rate-limits-for-the-rest-api?apiVersion=2022-11-28#checking-the-status-of-your-rate-limit
 # Returns a datetime at which the rate limit will be reset, or None if not
@@ -80,7 +78,7 @@ def response_datetime(r):
     dt = r.headers.get("date")
     return datetime.datetime.strptime(dt, "%a, %d %b %Y %X %Z")
 
-def get(sess, url, mediatype, params={}):
+def get(sess, url, mediatype, params={}, **kwargs):
     # TODO: warn on 301 redirect? https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api?apiVersion=2022-11-28#follow-redirects
 
     while True:
@@ -89,7 +87,7 @@ def get(sess, url, mediatype, params={}):
             headers = {}
             if mediatype is not None:
                 headers["Accept"] = mediatype
-            r = sess.get(url, params=params, headers=headers)
+            r = sess.get(url, params=params, headers=headers, **kwargs)
         except Exception as e:
             print(f" => {str(type(e))}", flush=True)
             raise
@@ -105,7 +103,7 @@ def get(sess, url, mediatype, params={}):
             return r
 
 # https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api?apiVersion=2022-11-28
-def get_paginated(sess, url, mediatype, params={}):
+def get_paginated(sess, url, mediatype, params={}, **kwargs):
     params = params.copy()
     try:
         del params["page"]
@@ -114,7 +112,7 @@ def get_paginated(sess, url, mediatype, params={}):
     params["per_page"] = "100"
 
     while True:
-        r = get(sess, url, mediatype, params)
+        r = get(sess, url, mediatype, params, **kwargs)
         yield r
 
         next_link = r.links.get("next")
@@ -128,39 +126,12 @@ def get_paginated(sess, url, mediatype, params={}):
 
         url = next_url
 
-# If zi.date_time is UNSET_ZIPINFO_DATE_TIME, then it will be replaced with the
-# value of the HTTP response's Last-Modified header, if present.
-def get_to_zipinfo(sess, url, z, zi, mediatype, params={}):
-    r = get(sess, url, mediatype, params)
-
-    if zi.date_time == UNSET_ZIPINFO_DATE_TIME:
-        last_modified = r.headers.get("Last-Modified")
-        if last_modified is not None:
-            zi.date_time = http_date_to_zip_time(last_modified)
-
-    with z.open(zi, mode="w") as f:
-        for chunk in r.iter_content(4096):
-            f.write(chunk)
-
-# Converts a list of path components into a string path, raising an exception if
-# any component contains a slash, is "." or "..", or is empty; or if the whole
-# path is empty. The checks are to prevent any file writes outside the
-# destination directory when the zip file is extracted. We rely on the
-# assumption that no other files in the zip file are symbolic links, which is
-# true because this program does not create symbolic links.
-def make_zip_file_path(*components):
-    for component in components:
-        if "/" in component:
-            raise ValueError("path component contains a slash")
-        if component == "":
-            raise ValueError("path component is empty")
-        if component == ".":
-            raise ValueError("path component is a self directory reference")
-        if component == "..":
-            raise ValueError("path component is a parent directory reference")
-    if not components:
-        raise ValueError("path is empty")
-    return "/".join(components)
+def get_to_tempfile(sess, url, mediatype, params={}):
+    r = get(sess, url, mediatype, params, stream=True)
+    tmp = tempfile.TemporaryFile()
+    for chunk in r.iter_content(4096):
+        tmp.write(chunk)
+    return tmp
 
 # Fallback to mistune 1.0 renderer if mistune 2.0 is not installed
 try:
@@ -205,25 +176,24 @@ def split_url_path(path):
 def strip_url_path_prefix(path, prefix):
     return strip_prefix(split_url_path(path), split_url_path(prefix))
 
-# If url is one we want to download, return a list of path components for the
-# path we want to store it at.
+# Return True or False, according to whether url is one we want to download.
 def link_is_wanted(url):
     try:
         components = urllib.parse.urlparse(url)
     except ValueError:
-        return None
+        return False
 
     if components.scheme == "https" and components.netloc == "user-images.githubusercontent.com":
         subpath = strip_url_path_prefix(components.path, "")
         if subpath is not None:
             # Inline image.
-            return ("user-images.githubusercontent.com", *subpath)
+            return True
     if components.scheme == "https" and components.netloc == "github.com":
         for prefix in (f"/{owner}/{repo}/files", "/user-attachments/files"):
             subpath = strip_url_path_prefix(components.path, prefix)
             if subpath is not None:
                 # File attachment.
-                return ("files", *subpath)
+                return True
     if components.scheme == "https" and components.netloc == "avatars.githubusercontent.com":
         path = components.path
         if components.query:
@@ -234,32 +204,15 @@ def link_is_wanted(url):
         subpath = strip_url_path_prefix(path, "")
         if subpath is not None:
             # Avatar image.
-            return ("avatars.githubusercontent.com", *subpath)
+            return True
 
-def backup(owner, repo, z, username, token):
-    paths_seen = set()
-    # Calls make_zip_file_path, and additionally raises an exception if the path
-    # has already been used.
-    def check_path(*components):
-        path = make_zip_file_path(*components)
-        if path in paths_seen:
-            raise ValueError(f"duplicate filename {path!a}")
-        paths_seen.add(path)
-        return path
+    return False
 
+def backup(owner, repo, db, username, token):
     # Escape owner and repo suitably for use in a URL.
     owner = urllib.parse.quote(owner, safe="")
     repo = urllib.parse.quote(repo, safe="")
 
-    now = datetime.datetime.utcnow()
-    z.writestr(check_path("README"), f"""\
-Archive of the GitHub repository https://github.com/{owner}/{repo}/
-made {now.strftime("%Y-%m-%d %H:%M:%S")}.
-""")
-
-    file_urls = set()
-
-    # HTTP Basic authentication for API.
     sess = requests.Session()
 
     if (username is None) != (token is None):
@@ -275,30 +228,37 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
     ).geturl()
     for r in get_paginated(sess, issues_url, MEDIATYPE, {"state": "all", "sort": "created", "direction": "asc"}):
         for issue in r.json():
+            if db.execute("SELECT NULL FROM issues WHERE id = :id", {"id": issue["id"]}).fetchone():
+                # Already fetched this issue.
+                continue
+            # Fetch the JSON content of the issue URL.
             check_url_origin(BASE_URL, issue["url"])
-            zi = zipfile.ZipInfo(check_path("issues", str(issue["id"]) + ".json"), timestamp_to_zip_time(issue["created_at"]))
-            get_to_zipinfo(sess, issue["url"], z, zi, MEDIATYPE)
+            with get_to_tempfile(sess, issue["url"], MEDIATYPE) as body:
+                db.execute("BEGIN")
+                with db:
+                    # Insert a database row with a placeholder json blob.
+                    rowid = db.execute("INSERT INTO issues VALUES (:id, zeroblob(:blob_size))", {
+                        "id": issue["id"],
+                        "blob_size": body.tell(),
+                    }).lastrowid
+                    # Write the response body into the json blob.
+                    with db.blobopen("issues", "json", rowid) as blob:
+                        body.seek(0)
+                        shutil.copyfileobj(body, blob)
+                        assert body.tell() == len(blob), (body.tell(), len(blob))
 
-            # Re-open the JSON file we just wrote, to parse it for links.
-            with z.open(zi) as f:
-                data = json.load(f)
-                for link in itertools.chain(markdown_extract_links(data["body"] or ""), [data["user"]["avatar_url"]]):
-                    link = urllib.parse.urlunparse(urllib.parse.urlparse(link)._replace(fragment = None)) # Discard fragment.
-                    dest = link_is_wanted(link)
-                    if dest is not None:
-                        file_urls.add((dest, link))
-
-            # There's no API for getting all reactions in a repository, so get
-            # them per issue and per comment.
-            # https://docs.github.com/en/rest/reactions/reactions?apiVersion=2022-11-28#list-reactions-for-an-issue
-            if issue["reactions"]["total_count"] != 0:
-                reactions_url = issue["reactions"]["url"]
-                check_url_origin(BASE_URL, reactions_url)
-                for r2 in get_paginated(sess, reactions_url, MEDIATYPE):
-                    for reaction in r2.json():
-                        zi = zipfile.ZipInfo(check_path("issues", str(issue["id"]), "reactions", str(reaction["id"]) + ".json"), timestamp_to_zip_time(reaction["created_at"]))
-                        with z.open(zi, mode="w") as f:
-                            f.write(json.dumps(reaction).encode("utf-8"))
+                    # There's no API for getting all reactions in a repository,
+                    # so get them per issue and per comment.
+                    # https://docs.github.com/en/rest/reactions/reactions?apiVersion=2022-11-28#list-reactions-for-an-issue
+                    if issue["reactions"]["total_count"] != 0:
+                        check_url_origin(BASE_URL, issue["reactions"]["url"])
+                        for r2 in get_paginated(sess, issue["reactions"]["url"], MEDIATYPE):
+                            for reaction in r2.json():
+                                db.execute("INSERT into issue_reactions VALUES (:id, :issue_id, :json)", {
+                                    "id": reaction["id"],
+                                    "issue_id": issue["id"],
+                                    "json": json.dumps(reaction).encode("utf-8"),
+                                })
 
     # https://docs.github.com/en/rest/issues/comments?apiVersion=2022-11-28#list-issue-comments
     # Comments are linked to their parent issue via the issue_url field.
@@ -307,30 +267,35 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
     ).geturl()
     for r in get_paginated(sess, comments_url, MEDIATYPE):
         for comment in r.json():
-            check_url_origin(BASE_URL, comment["url"])
-            zi = zipfile.ZipInfo(check_path("issues", "comments", str(comment["id"]) + ".json"), timestamp_to_zip_time(comment["created_at"]))
-            get_to_zipinfo(sess, comment["url"], z, zi, MEDIATYPE)
+            if db.execute("SELECT NULL FROM comments WHERE id = :id", {"id": comment["id"]}).fetchone():
+                # Already fetched this comment.
+                continue
+            with get_to_tempfile(sess, comment["url"], MEDIATYPE) as body:
+                db.execute("BEGIN")
+                with db:
+                    # Insert a database row with a placeholder json blob.
+                    rowid = db.execute("INSERT INTO comments VALUES (:id, zeroblob(:blob_size))", {
+                        "id": comment["id"],
+                        "blob_size": body.tell(),
+                    }).lastrowid
+                    # Write the response body into the json blob.
+                    with db.blobopen("comments", "json", rowid) as blob:
+                        body.seek(0)
+                        shutil.copyfileobj(body, blob)
+                        assert body.tell() == len(blob), (body.tell(), len(blob))
 
-            # Re-open the JSON file we just wrote, to parse it for links.
-            with z.open(zi) as f:
-                data = json.load(f)
-                for link in itertools.chain(markdown_extract_links(data["body"] or ""), [data["user"]["avatar_url"]]):
-                    link = urllib.parse.urlunparse(urllib.parse.urlparse(link)._replace(fragment = None)) # Discard fragment.
-                    dest = link_is_wanted(link)
-                    if dest is not None:
-                        file_urls.add((dest, link))
-
-            # There's no API for getting all reactions in a repository, so get
-            # them per issue and per comment.
-            # https://docs.github.com/en/rest/reactions/reactions?apiVersion=2022-11-28#list-reactions-for-an-issue-comment
-            if comment["reactions"]["total_count"] != 0:
-                reactions_url = comment["reactions"]["url"]
-                check_url_origin(BASE_URL, reactions_url)
-                for r2 in get_paginated(sess, reactions_url, MEDIATYPE):
-                    for reaction in r2.json():
-                        zi = zipfile.ZipInfo(check_path("issues", "comments", str(comment["id"]), "reactions", str(reaction["id"]) + ".json"), timestamp_to_zip_time(reaction["created_at"]))
-                        with z.open(zi, mode="w") as f:
-                            f.write(json.dumps(reaction).encode("utf-8"))
+                    # There's no API for getting all reactions in a repository,
+                    # so get them per issue and per comment.
+                    # https://docs.github.com/en/rest/reactions/reactions?apiVersion=2022-11-28#list-reactions-for-an-issue
+                    if comment["reactions"]["total_count"] != 0:
+                        check_url_origin(BASE_URL, comment["reactions"]["url"])
+                        for r2 in get_paginated(sess, comment["reactions"]["url"], MEDIATYPE):
+                            for reaction in r2.json():
+                                db.execute("INSERT into comment_reactions VALUES (:id, :comment_id, :json)", {
+                                    "id": reaction["id"],
+                                    "comment_id": comment["id"],
+                                    "json": json.dumps(reaction).encode("utf-8"),
+                                })
 
             # TODO: comment edit history (if possible)
 
@@ -340,22 +305,121 @@ made {now.strftime("%Y-%m-%d %H:%M:%S")}.
     ).geturl()
     for r in get_paginated(sess, labels_url, MEDIATYPE):
         for label in r.json():
-            check_url_origin(BASE_URL, label["url"])
-            zi = zipfile.ZipInfo(check_path("labels", str(label["id"]) + ".json"))
-            get_to_zipinfo(sess, label["url"], z, zi, MEDIATYPE)
+            if db.execute("SELECT NULL FROM labels WHERE id = :id", {"id": label["id"]}).fetchone():
+                # Already fetched this label.
+                continue
+            with get_to_tempfile(sess, label["url"], MEDIATYPE) as body:
+                db.execute("BEGIN")
+                with db:
+                    # Insert a database row with a placeholder json blob.
+                    rowid = db.execute("INSERT INTO labels VALUES (:id, zeroblob(:blob_size))", {
+                        "id": label["id"],
+                        "blob_size": body.tell(),
+                    }).lastrowid
+                    # Write the response body into the json blob.
+                    with db.blobopen("labels", "json", rowid) as blob:
+                        body.seek(0)
+                        shutil.copyfileobj(body, blob)
+                        assert body.tell() == len(blob), (body.tell(), len(blob))
 
     # A new session, without Basic auth, for downloading plain files.
     sess = requests.Session()
 
-    for dest, url in sorted(file_urls):
-        zi = zipfile.ZipInfo(check_path(*dest))
-        get_to_zipinfo(sess, url, z, zi, None)
+    # Parse issue and comment text for links and avatar URLs.
+    def all_json():
+        for (blob,) in db.execute("SELECT json FROM issues"):
+            yield blob
+        for (blob,) in db.execute("SELECT json FROM comments"):
+            yield blob
+    def scrape_links():
+        for blob in all_json():
+            data = json.loads(blob)
+            yield data["user"]["avatar_url"]
+            for link in markdown_extract_links(data["body"] or ""):
+                yield urllib.parse.urlunparse(urllib.parse.urlparse(link)._replace(fragment = None)) # Discard fragment.
+    seen = set(url for (url,) in db.execute("SELECT url FROM files"))
+    for link in scrape_links():
+        if not link_is_wanted(link):
+            continue
+        if link in seen:
+            continue
+        seen.add(link)
+        with get_to_tempfile(sess, link, MEDIATYPE) as body:
+            db.execute("BEGIN")
+            with db:
+                # Insert a database row with a placeholder json blob.
+                rowid = db.execute("INSERT INTO files VALUES (:url, zeroblob(:blob_size))", {
+                    "url": link,
+                    "blob_size": body.tell(),
+                }).lastrowid
+                # Write the response body into the data blob.
+                with db.blobopen("files", "data", rowid) as blob:
+                    body.seek(0)
+                    shutil.copyfileobj(body, blob)
+                    assert body.tell() == len(blob), (body.tell(), len(blob))
+
+def create_tables(db):
+    db.execute("BEGIN")
+    with db:
+        # Make id columns UNIQUE (so they may be the parent of a foreign key
+        # constraint), but not PRIMARY KEY. An INTEGER PRIMARY KEY takes over
+        # the role of the rowid for the table, and rowid values that are larger
+        # than 31 bits crash the blobopen function in certain versions of Python.
+        # https://github.com/python/cpython/issues/100370
+        db.execute("""\
+CREATE TABLE IF NOT EXISTS issues (
+    id INTEGER UNIQUE,
+    json BLOB
+) STRICT""")
+        db.execute("""\
+CREATE TABLE IF NOT EXISTS comments (
+    id INTEGER UNIQUE,
+    json BLOB
+) STRICT""")
+        db.execute("""\
+CREATE TABLE IF NOT EXISTS labels (
+    id INTEGER UNIQUE,
+    json BLOB
+) STRICT""")
+        db.execute("""\
+CREATE TABLE IF NOT EXISTS issue_reactions (
+    id INTEGER UNIQUE,
+    issue_id INTEGER,
+    json BLOB,
+    FOREIGN KEY(issue_id) REFERENCES issues(id)
+) STRICT""")
+        db.execute("""\
+CREATE TABLE IF NOT EXISTS comment_reactions (
+    id INTEGER UNIQUE,
+    comment_id INTEGER,
+    json BLOB,
+    FOREIGN KEY(comment_id) REFERENCES comments(id)
+) STRICT""")
+        db.execute("""\
+CREATE TABLE IF NOT EXISTS files (
+    url TEXT,
+    data BLOB
+) STRICT""")
+
+# Escape a filename so that sqlite3 will interpret it as a filesystem path, not
+# as a special filename such as ":memory:" or a URI filename beginning with
+# "file:".
+def sqlite_escape_filename(filename):
+    # The three cases which sqlite3 may interpret specially are: path begins
+    # with ":" (e.g. ":memory:"), path begins with "file:" (URI), or path is
+    # empty (which means to use a temporary file as the backing store). If path
+    # is absolute, none of these are possible, so return the original path
+    # unmodified. Otherwise, simply prepend a "./" to defuse all of these.
+    if os.path.isabs(filename):
+        return filename
+    else:
+        return os.path.join(".", filename)
 
 if __name__ == "__main__":
     username = None
     token = None
 
-    opts, (repo, zip_filename) = getopt.gnu_getopt(sys.argv[1:], "u:")
+    opts, (repo, db_filename) = getopt.gnu_getopt(sys.argv[1:], "u:")
     for o, a in opts:
         if o == "-u":
             username, token = a.split(":", 1)
@@ -364,14 +428,11 @@ if __name__ == "__main__":
 
     owner, repo = repo.split("/", 1)
 
-    # Write to a temporary file, then rename to the requested name when
-    # finished.
-    with tempfile.NamedTemporaryFile(dir=os.path.dirname(zip_filename), suffix=".zip", delete=False) as f:
-        try:
-            with zipfile.ZipFile(f, mode="w") as z:
-                backup(owner, repo, z, username, token)
-            os.rename(f.name, zip_filename)
-        except:
-            # Delete output zip file on error.
-            os.remove(f.name)
-            raise
+    db = sqlite3.connect(sqlite_escape_filename(db_filename), isolation_level=None)
+    try:
+        db.execute("PRAGMA foreign_keys = ON")
+        create_tables(db)
+        backup(owner, repo, db, username, token)
+        db.execute("VACUUM")
+    finally:
+        db.close()
