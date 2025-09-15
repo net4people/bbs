@@ -34,6 +34,14 @@ BBS adalah forum inklusif dan multibahasa untuk diskusi publik tentang pengelaka
 ### &rlm;منتدى Net4People&zwnj;
 &rlm;هَذَا الْمُنْتَدَى مَسَّاحَةٌ شَامِلَةٌ وَمُتَعَدِّدَةُ اللُّغَاتِ لِلنِّقَاشِ الْعَامِّ حَوْلَ تَجَاوُزِ رَقَابَةِ الإنترنت. يُمْكِنُ **لِلْمُطَوِّرِينَ وَالْبَاحِثِينَ** مُنَاقَشَةُ وَمُشَارَكَةُ الْمَعْلُومَاتِ، وَالتِّقْنِيَّاتِ، وَالْأَبْحَاثِ هُنَا. لَا تَتَرَدَّدْ/ي فِي الْكُتَّابَةِ بَلَغَتِك؛ سَنَقُومُ بِالتَّرْجَمَةِ. لِفَتْحِ نِقَاشِ جَديدٍ، [اِفْتَحْ/ي مُشَكَّلَةَ جَديدَةٍ](https://github.com/net4people/bbs/issues/new).&zwnj;
 
+### Net4People BBS (Net4People 게시판)
+
+BBS는 인터넷 검열 우회 방안에 관한 공개 토론을 위한 포용적이고 다국어 지원 포럼입니다.  
+개발자와 연구자들이 정보, 기술, 연구 결과를 논의하고 공유하는 공간입니다.  
+자유롭게 본인의 언어로 글을 작성해 주세요, 저희가 번역해 드립니다.  
+토론 주제를 시작하려면 [여기서 새 이슈를 생성해 주세요](https://github.com/net4people/bbs/issues/new).  
+
+
 ----
 
 [Archives of this forum](https://archive.org/search.php?query=source%3A%22https%3A%2F%2Fgithub.com%2Fnet4people%2Fbbs%22&sort=-date), made using the [backup.py](backup.py) script. To make your own backup, [create a personal access token](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) and run:
