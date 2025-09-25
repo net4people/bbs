@@ -41,6 +41,12 @@ BBS는 인터넷 검열 우회 방안에 관한 공개 토론을 위한 포용�
 자유롭게 본인의 언어로 글을 작성해 주세요, 저희가 번역해 드립니다.  
 토론 주제를 시작하려면 [여기서 새 이슈를 생성해 주세요](https://github.com/net4people/bbs/issues/new).  
 
+### Net4People BBS
+
+BBS est un forum inclusif et multilingue de discussion publique sur le contournement de la censure sur Internet.  
+C'est un lieu où les développeurs et les chercheurs peuvent discuter et partager leurs informations, leurs techniques et leurs recherches.  
+N'hésitez pas à écrire dans votre langue natale; nous traduirons.  
+Pour lancer une discussion, [ouvrez un nouveau sujet](https://github.com/net4people/bbs/issues/new).
 
 ----
 
