@@ -134,32 +134,23 @@ def get_to_tempfile(sess, url, mediatype, params={}):
         tmp.write(chunk)
     return tmp
 
-# Fallback to mistune 1.0 renderer if mistune 2.0 is not installed
-try:
-    mistuneRenderer = mistune.HTMLRenderer
-except AttributeError:
-    mistuneRenderer = mistune.Renderer
 # Custom mistune.Renderer that stores a list of all links encountered.
-class LinkExtractionRenderer(mistuneRenderer):
+class LinkExtractionRenderer(mistune.HTMLRenderer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.links = []
 
-    def autolink(self, link, is_email=False):
-        self.links.append(link)
-        return super().autolink(link, is_email)
-
-    def image(self, src, title, alt_text):
+    def image(self, src, alt="", title=None):
         self.links.append(src)
-        return super().image(src, title, alt_text)
+        return super().image(src, alt, title)
 
-    def link(self, link, title, content=None):
+    def link(self, link, text=None, title=None):
         self.links.append(link)
-        return super().link(link, title, content)
+        return super().link(link, text, title)
 
 def markdown_extract_links(markdown):
     renderer = LinkExtractionRenderer()
-    mistune.Markdown(renderer=renderer)(markdown) # Discard HTML output.
+    mistune.create_markdown(renderer=renderer)(markdown) # Discard HTML output.
     return renderer.links
 
 # Return seq with prefix stripped if it has such a prefix, or else None.
