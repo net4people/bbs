@@ -72,7 +72,7 @@ def rate_limit_reset(r):
 
     # If x-ratelimit-remaining is set, assume x-ratelimit-reset is set.
     reset = r.headers["x-ratelimit-reset"]
-    return datetime.datetime.utcfromtimestamp(int(r.headers["x-ratelimit-reset"]))
+    return datetime.datetime.fromtimestamp(int(r.headers["x-ratelimit-reset"]), datetime.UTC).
 
 def response_datetime(r):
     dt = r.headers.get("date")
