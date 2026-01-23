@@ -1,2 +1,2 @@
-mistune >=2.0
-requests >=2.25
+mistune>=2.0,<4.0
+requests~=2.25
