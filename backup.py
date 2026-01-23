@@ -26,6 +26,7 @@
 # complete when this program exits with a 0 return code.
 
 import datetime
+import email.utils
 import getopt
 import json
 import os.path
@@ -76,7 +77,7 @@ def rate_limit_reset(r):
 
 def response_datetime(r):
     dt = r.headers.get("date")
-    return datetime.datetime.strptime(dt, "%a, %d %b %Y %X %Z")
+    return email.utils.parsedate_to_datetime(dt)
 
 def get(sess, url, mediatype, params={}, **kwargs):
     # TODO: warn on 301 redirect? https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api?apiVersion=2022-11-28#follow-redirects
