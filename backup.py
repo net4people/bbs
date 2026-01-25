@@ -252,7 +252,7 @@ def backup(owner, repo, db, username, token):
                                     "json": json.dumps(reaction).encode("utf-8"),
                                 })
 
-    # https://docs.github.com/en/rest/issues/comments?apiVersion=2022-11-28#list-issue-comments
+    # https://docs.github.com/en/rest/issues/comments?apiVersion=2022-11-28#list-issue-comments-for-a-repository
     # Comments are linked to their parent issue via the issue_url field.
     comments_url = urllib.parse.urlparse(BASE_URL)._replace(
         path=f"/repos/{owner}/{repo}/issues/comments",
