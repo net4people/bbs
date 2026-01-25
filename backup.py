@@ -181,7 +181,7 @@ def link_is_wanted(url):
             # Inline image.
             return True
     if components.scheme == "https" and components.netloc == "github.com":
-        for prefix in (f"/{owner}/{repo}/files", "/user-attachments/files"):
+        for prefix in (f"/{owner}/{repo}/files", "/user-attachments/files", "/user-attachments/assets"):
             subpath = strip_url_path_prefix(components.path, prefix)
             if subpath is not None:
                 # File attachment.
