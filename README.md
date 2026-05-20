@@ -48,6 +48,10 @@ C'est un lieu où les développeurs et les chercheurs peuvent discuter et partag
 N'hésitez pas à écrire dans votre langue natale; nous traduirons.  
 Pour lancer une discussion, [ouvrez un nouveau sujet](https://github.com/net4people/bbs/issues/new).
 
+### Net4People BBS
+
+यह ब्लॉग इंटरनेट सेंसरशिप से बचने के तरीकों पर सार्वजनिक चर्चा के लिए एक समावेशी और बहुभाषी मंच है। यह डेवलपर्स और शोधकर्ताओं के लिए जानकारी, तकनीक और शोध पर चर्चा और साझा करने का स्थान है। आप अपनी भाषा में बेझिझक लिख सकते हैं; हम अनुवाद करेंगे। चर्चा का विषय शुरू करने के लिए, [एक नया प्रश्न पत्र खोलें।](https://github.com/net4people/bbs/issues/new).
+
 ----
 
 [Archives of this forum](https://archive.org/search.php?query=source%3A%22https%3A%2F%2Fgithub.com%2Fnet4people%2Fbbs%22&sort=-date), made using the [backup.py](backup.py) script. To make your own backup, [create a personal access token](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token) and run:
